@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
-import '../../../data/models/book_project.dart';
 import '../../../data/models/chapter.dart';
 import '../../../data/models/content_block.dart';
 import '../../../data/repositories/project_repository.dart';

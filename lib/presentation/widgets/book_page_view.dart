@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../data/models/book_project.dart';
 import '../../data/models/content_block.dart';
@@ -175,8 +176,8 @@ class _BookPageViewState extends State<BookPageView> {
             margin: const EdgeInsets.symmetric(vertical: 16),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                block.imagePath!,
+              child: Image.file(
+                File(block.imagePath!),
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => Container(
                   height: 200,

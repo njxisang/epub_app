@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:uuid/uuid.dart';
 import 'chapter.dart';
 import 'epub_metadata.dart';
 
@@ -79,12 +80,13 @@ class BookProject extends Equatable {
     required String author,
   }) {
     final now = DateTime.now();
+    final uuid = const Uuid();
     return BookProject(
       id: id,
       title: title,
       author: author,
       chapters: [
-        Chapter(id: id, title: '第一章', blocks: []),
+        Chapter(id: uuid.v4(), title: '第一章', blocks: []),
       ],
       metadata: EpubMetadata.empty(),
       createdAt: now,

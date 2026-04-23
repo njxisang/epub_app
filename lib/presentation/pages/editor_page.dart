@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_dimensions.dart';
+import '../../data/models/content_block.dart';
 import '../../domain/services/image_service.dart';
 import '../bloc/editor/editor_bloc.dart';
 import '../bloc/editor/editor_event.dart';
@@ -174,8 +175,13 @@ class _EditorPageViewState extends State<EditorPageView> {
         ),
         Expanded(
           child: _quillController != null
-              ? QuillEditor.basic(
-                  controller: _quillController!,
+              ? QuillEditor(
+                  configurations: QuillEditorConfigurations(
+                    controller: _quillController!,
+                    autoFocus: false,
+                    expands: true,
+                    scrollable: true,
+                  ),
                   focusNode: _focusNode,
                   scrollController: _scrollController,
                 )
@@ -187,8 +193,31 @@ class _EditorPageViewState extends State<EditorPageView> {
 
   void _initializeQuillController(List blocks) {
     _quillController?.dispose();
-    _quillController = QuillController.basic();
-    // TODO: Parse blocks and populate editor
+
+    // Convert ContentBlocks to Quill Delta document
+    final document = _blocksToDocument(blocks);
+    _quillController = QuillController(
+      document: document,
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+  }
+
+  Document _blocksToDocument(List blocks) {
+    if (blocks.isEmpty) {
+      return Document();
+    }
+
+    // Build plain text from blocks and create document
+    final plainText = blocks.map((block) {
+      if (block.type == BlockType.text && block.textContent != null) {
+        return block.textContent!;
+      } else if (block.type == BlockType.image && block.imagePath != null) {
+        return '[图片: ${block.imagePath!.split('/').last}]';
+      }
+      return '';
+    }).where((line) => line.isNotEmpty).join('\n\n');
+
+    return Document()..insert(0, plainText);
   }
 
   void _insertImage(BuildContext context, String chapterId) async {

@@ -1,14 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_dimensions.dart';
+import '../../injection_container.dart';
 import '../../domain/services/epub_builder.dart';
 import '../../domain/services/image_service.dart';
-import '../bloc/editor/editor_bloc.dart';
-import '../bloc/editor/editor_event.dart';
-import '../bloc/editor/editor_state.dart';
+import '../../data/models/book_project.dart';
+import '../../data/repositories/project_repository.dart';
 
 class ExportPage extends StatefulWidget {
   final String projectId;
@@ -28,22 +29,43 @@ class _ExportPageState extends State<ExportPage> {
   final _descriptionController = TextEditingController();
 
   bool _isExporting = false;
+  BookProject? _project;
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadMetadata();
+    _loadProject();
   }
 
-  void _loadMetadata() {
-    final state = context.read<EditorBloc>().state;
-    if (state is EditorLoaded) {
-      _titleController.text = state.project.title;
-      _authorController.text = state.project.author;
-      _languageController.text = state.project.metadata.language ?? 'zh-CN';
-      _publisherController.text = state.project.metadata.publisher ?? '';
-      _isbnController.text = state.project.metadata.isbn ?? '';
-      _descriptionController.text = state.project.metadata.description ?? '';
+  Future<void> _loadProject() async {
+    try {
+      final repository = context.read<ProjectRepository>();
+      final project = await repository.getProjectById(widget.projectId);
+      if (mounted) {
+        setState(() {
+          _project = project;
+          _isLoading = false;
+          if (project != null) {
+            _titleController.text = project.title;
+            _authorController.text = project.author;
+            _languageController.text = project.metadata.language ?? 'zh-CN';
+            _publisherController.text = project.metadata.publisher ?? '';
+            _isbnController.text = project.metadata.isbn ?? '';
+            _descriptionController.text = project.metadata.description ?? '';
+          } else {
+            _error = 'Project not found';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      }
     }
   }
 
@@ -60,70 +82,83 @@ class _ExportPageState extends State<ExportPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<EditorBloc, EditorState>(
-      builder: (context, state) {
-        if (state is! EditorLoaded) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text(AppStrings.exportTitle),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.pop(),
-            ),
+    if (_error != null || _project == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text(AppStrings.exportTitle),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppDimensions.paddingM),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cover Section
-                Text(
-                  AppStrings.coverImage,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                _buildCoverPicker(context, state),
-                const SizedBox(height: 24),
+        ),
+        body: Center(child: Text(_error ?? 'Project not found')),
+      );
+    }
 
-                // Metadata Section
-                Text(
-                  AppStrings.metadata,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 16),
-                _buildMetadataForm(),
-                const SizedBox(height: 32),
+    return _buildContent(context);
+  }
 
-                // Export Button
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _isExporting ? null : () => _exportEpub(context, state),
-                    icon: _isExporting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.book),
-                    label: Text(_isExporting ? AppStrings.exporting : AppStrings.exportEpub),
-                  ),
-                ),
-              ],
+  Widget _buildContent(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(AppStrings.exportTitle),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppDimensions.paddingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover Section
+            Text(
+              AppStrings.coverImage,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 8),
+            _buildCoverPicker(context),
+            const SizedBox(height: 24),
+
+            // Metadata Section
+            Text(
+              AppStrings.metadata,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            _buildMetadataForm(),
+            const SizedBox(height: 32),
+
+            // Export Button
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isExporting ? null : () => _exportEpub(context),
+                icon: _isExporting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.book),
+                label: Text(_isExporting ? AppStrings.exporting : AppStrings.exportEpub),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildCoverPicker(BuildContext context, EditorLoaded state) {
-    final coverPath = state.project.coverPath;
+  Widget _buildCoverPicker(BuildContext context) {
+    final coverPath = _project?.coverPath;
 
     return Container(
       height: 200,
@@ -140,8 +175,8 @@ class _ExportPageState extends State<ExportPage> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                  child: Image.asset(
-                    coverPath,
+                  child: Image.file(
+                    File(coverPath),
                     width: double.infinity,
                     height: 200,
                     fit: BoxFit.cover,
@@ -162,9 +197,7 @@ class _ExportPageState extends State<ExportPage> {
                       ),
                       const SizedBox(width: 8),
                       IconButton.filled(
-                        onPressed: () => context.read<EditorBloc>().add(
-                              const UpdateMetadata(coverPath: null),
-                            ),
+                        onPressed: () => _removeCover(),
                         icon: const Icon(Icons.delete),
                         style: IconButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.8),
@@ -269,7 +302,9 @@ class _ExportPageState extends State<ExportPage> {
 
       if (file != null && mounted) {
         final savedPath = await imageService.saveImage(widget.projectId, file, isCover: true);
-        context.read<EditorBloc>().add(UpdateMetadata(coverPath: savedPath));
+        setState(() {
+          _project = _project?.copyWith(coverPath: savedPath);
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -280,31 +315,46 @@ class _ExportPageState extends State<ExportPage> {
     }
   }
 
-  void _exportEpub(BuildContext context, EditorLoaded state) async {
-    // Update metadata first
-    context.read<EditorBloc>().add(UpdateMetadata(
-          title: _titleController.text,
-          author: _authorController.text,
-        ));
+  void _removeCover() {
+    setState(() {
+      _project = _project?.copyWith(coverPath: null);
+    });
+  }
+
+  void _exportEpub(BuildContext context) async {
+    if (_project == null) return;
 
     setState(() => _isExporting = true);
 
     try {
-      final epubBuilder = EpubBuilder();
-      final project = state.project.copyWith(
+      // Use dependency injection instead of manual instantiation
+      final epubBuilder = getIt<EpubBuilder>();
+
+      // Create updated project with current form values
+      final updatedProject = _project!.copyWith(
         title: _titleController.text,
         author: _authorController.text,
+        metadata: _project!.metadata.copyWith(
+          language: _languageController.text,
+          publisher: _publisherController.text.isEmpty ? null : _publisherController.text,
+          isbn: _isbnController.text.isEmpty ? null : _isbnController.text,
+          description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+        ),
       );
 
-      final outputFile = await epubBuilder.buildEpub(project);
+      final outputFile = await epubBuilder.buildEpub(updatedProject);
 
       if (mounted) {
         setState(() => _isExporting = false);
 
+        // Save updated metadata to repository
+        final repository = context.read<ProjectRepository>();
+        await repository.saveProject(updatedProject);
+
         // Offer to share
         await Share.shareXFiles(
           [XFile(outputFile.path)],
-          text: '《${project.title}》EPUB电子书',
+          text: '《${updatedProject.title}》EPUB电子书',
         );
 
         ScaffoldMessenger.of(context).showSnackBar(

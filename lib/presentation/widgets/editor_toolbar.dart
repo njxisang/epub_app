@@ -23,8 +23,8 @@ class EditorToolbar extends StatelessWidget {
         ),
       ),
       child: QuillSimpleToolbar(
-        controller: controller,
-        config: const QuillSimpleToolbarConfig(
+        configurations: QuillSimpleToolbarConfigurations(
+          controller: controller,
           showAlignmentButtons: false,
           showBackgroundColorButton: false,
           showCenterAlignment: false,
