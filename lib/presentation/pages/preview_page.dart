@@ -20,6 +20,7 @@ class _PreviewPageState extends State<PreviewPage> {
   BookProject? _project;
   bool _isLoading = true;
   String? _error;
+  final GlobalKey<_PreviewPageViewState> _pageViewKey = GlobalKey<_PreviewPageViewState>();
 
   @override
   void initState() {
@@ -91,7 +92,7 @@ class _PreviewPageState extends State<PreviewPage> {
       body: Column(
         children: [
           Expanded(
-            child: _PreviewPageView(project: project),
+            child: _PreviewPageView(project: project, pageViewKey: _pageViewKey),
           ),
           Container(
             padding: const EdgeInsets.all(16),
@@ -132,6 +133,10 @@ class _PreviewPageState extends State<PreviewPage> {
                     title: Text(chapter.title),
                     onTap: () {
                       Navigator.pop(context);
+                      // Jump to chapter after bottom sheet closes
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _pageViewKey.currentState?.jumpToChapter(index);
+                      });
                     },
                   );
                 },
@@ -147,8 +152,9 @@ class _PreviewPageState extends State<PreviewPage> {
 /// Preview page view with navigation support for table of contents
 class _PreviewPageView extends StatefulWidget {
   final BookProject project;
+  final GlobalKey<_PreviewPageViewState>? pageViewKey;
 
-  const _PreviewPageView({required this.project});
+  const _PreviewPageView({required this.project, this.pageViewKey});
 
   @override
   State<_PreviewPageView> createState() => _PreviewPageViewState();
@@ -157,6 +163,24 @@ class _PreviewPageView extends StatefulWidget {
 class _PreviewPageViewState extends State<_PreviewPageView> {
   late PageController _pageController;
   int _currentPage = 0;
+
+  /// Jump to a specific chapter's first page
+  void jumpToChapter(int chapterIndex) {
+    final pages = _generatePages();
+    // Find the first page of the target chapter
+    int targetPage = 0;
+    for (int i = 0; i < pages.length; i++) {
+      if (pages[i].chapterIndex == chapterIndex) {
+        targetPage = i;
+        break;
+      }
+    }
+    _pageController.animateToPage(
+      targetPage,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   void initState() {
