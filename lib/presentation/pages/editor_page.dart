@@ -66,13 +66,30 @@ class _EditorPageViewState extends State<EditorPageView> {
 
   List<ContentBlock> _documentToBlocks(Document document) {
     final blocks = <ContentBlock>[];
-    final plainText = document.toPlainText().trim();
-    if (plainText.isNotEmpty) {
-      blocks.add(ContentBlock.text(
-        id: const Uuid().v4(),
-        content: plainText,
-      ));
+    final delta = document.toDelta();
+    final operations = delta.toList();
+
+    for (final op in operations) {
+      if (op.data is String) {
+        final text = op.data as String;
+        if (text.trim().isNotEmpty) {
+          blocks.add(ContentBlock.text(
+            id: const Uuid().v4(),
+            content: text,
+          ));
+        }
+      } else if (op.data is Map) {
+        final map = op.data as Map;
+        if (map.containsKey(BlockEmbed.imageType)) {
+          final imagePath = map[BlockEmbed.imageType] as String;
+          blocks.add(ContentBlock.image(
+            id: const Uuid().v4(),
+            imagePath: imagePath,
+          ));
+        }
+      }
     }
+
     return blocks;
   }
 
