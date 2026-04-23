@@ -2,8 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'chapter.dart';
 import 'epub_metadata.dart';
 
-enum BlockType { text, image }
-
 class BookProject extends Equatable {
   final String id;
   final String title;
