@@ -4,8 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:uuid/uuid.dart';
-import '../../core/constants/app_strings.dart';
-import '../../core/constants/app_dimensions.dart';
 import '../../data/models/content_block.dart';
 import '../../domain/services/image_service.dart';
 import '../bloc/editor/editor_bloc.dart';
@@ -23,13 +21,15 @@ class EditorPage extends StatelessWidget {
       create: (context) => EditorBloc(
         repository: context.read(),
       )..add(LoadProject(projectId)),
-      child: const EditorPageView(),
+      child: EditorPageView(projectId: projectId),
     );
   }
 }
 
 class EditorPageView extends StatefulWidget {
-  const EditorPageView({super.key});
+  final String projectId;
+
+  const EditorPageView({super.key, required this.projectId});
 
   @override
   State<EditorPageView> createState() => _EditorPageViewState();
@@ -41,6 +41,7 @@ class _EditorPageViewState extends State<EditorPageView> {
   final ScrollController _scrollController = ScrollController();
   String? _currentChapterId;
   bool _isPreviewMode = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void dispose() {
@@ -52,7 +53,7 @@ class _EditorPageViewState extends State<EditorPageView> {
   }
 
   void _saveCurrentChapter() {
-    if (_quillController != null && mounted && _currentChapterId != null) {
+    if (_quillController != null && _currentChapterId != null) {
       final blocks = _documentToBlocks(_quillController!.document);
       context.read<EditorBloc>().add(UpdateChapterContent(
         _currentChapterId!,
@@ -118,6 +119,7 @@ class _EditorPageViewState extends State<EditorPageView> {
 
         if (state is editor.EditorLoaded) {
           return Scaffold(
+            key: _scaffoldKey,
             backgroundColor: const Color(0xFFF8F6F2),
             appBar: _buildAppBar(context, state),
             body: Column(
@@ -143,9 +145,11 @@ class _EditorPageViewState extends State<EditorPageView> {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.menu, color: Colors.black87),
-        onPressed: () => Scaffold.of(context).openDrawer(),
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu, color: Colors.black87),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,10 +184,7 @@ class _EditorPageViewState extends State<EditorPageView> {
             ),
             child: const Text(
               '未保存',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.orange,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.orange),
             ),
           ),
         IconButton(
@@ -192,9 +193,7 @@ class _EditorPageViewState extends State<EditorPageView> {
             color: Colors.black87,
           ),
           onPressed: () {
-            setState(() {
-              _isPreviewMode = !_isPreviewMode;
-            });
+            setState(() => _isPreviewMode = !_isPreviewMode);
           },
           tooltip: _isPreviewMode ? '编辑' : '预览',
         ),
@@ -236,9 +235,11 @@ class _EditorPageViewState extends State<EditorPageView> {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               width: double.infinity,
-              color: Theme.of(context).primaryColor,
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -257,6 +258,8 @@ class _EditorPageViewState extends State<EditorPageView> {
                       fontSize: 14,
                       color: Colors.white70,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -330,7 +333,8 @@ class _EditorPageViewState extends State<EditorPageView> {
                         ),
                         const PopupMenuItem(
                           value: 'delete',
-                          child: Text('删除', style: TextStyle(color: Colors.red)),
+                          child:
+                              Text('删除', style: TextStyle(color: Colors.red)),
                         ),
                       ],
                     ),
@@ -613,13 +617,14 @@ class _EditorPageViewState extends State<EditorPageView> {
           : await imageService.takePhoto();
 
       if (file != null && mounted) {
-        final savedPath = await imageService.saveImage(
-            GoRouter.of(context).routeInformationProvider.value.uri.pathSegments[2], file);
+        final savedPath = await imageService.saveImage(widget.projectId, file);
 
+        // Insert at the end of document or at current cursor position
         final index = _quillController!.selection.baseOffset;
-        _quillController!.document.insert(index, BlockEmbed.image(savedPath));
+        final insertIndex = index >= 0 ? index : doc.length - 1;
+        _quillController!.document.insert(insertIndex, BlockEmbed.image(savedPath));
         _quillController!.updateSelection(
-          TextSelection.collapsed(offset: index + 1),
+          TextSelection.collapsed(offset: insertIndex + 1),
           ChangeSource.local,
         );
 
@@ -636,6 +641,8 @@ class _EditorPageViewState extends State<EditorPageView> {
       }
     }
   }
+
+  Document get doc => _quillController?.document ?? Document();
 
   void _showAddChapterDialog(BuildContext context) {
     final controller = TextEditingController();
@@ -722,9 +729,7 @@ class _EditorPageViewState extends State<EditorPageView> {
               context.read<EditorBloc>().add(DeleteChapter(chapterId));
               Navigator.pop(dialogContext);
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('删除'),
           ),
         ],
@@ -828,24 +833,12 @@ class ImageEmbedBuilder extends EmbedBuilder {
               title: const Text('删除图片', style: TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(ctx);
-                final delta = embedContext.controller.document.toDelta();
-                int embedIndex = -1;
-                for (int i = 0; i < delta.length; i++) {
-                  final op = delta[i];
-                  if (op.data is Map &&
-                      (op.data as Map).containsKey(BlockEmbed.imageType)) {
-                    embedIndex = i;
-                    break;
-                  }
-                }
-                if (embedIndex >= 0) {
-                  embedContext.controller.replaceText(
-                    embedIndex,
-                    1,
-                    '',
-                    const TextSelection.collapsed(offset: 0),
-                  );
-                }
+                embedContext.controller.replaceText(
+                  embedContext.controller.selection.baseOffset,
+                  1,
+                  '',
+                  const TextSelection.collapsed(offset: 0),
+                );
               },
             ),
           ],
