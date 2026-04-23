@@ -1,0 +1,52 @@
+name: epub_app
+description: "EpubStudio - EPUB电子书排版应用"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.8
+
+  # Rich Text Editor
+  flutter_quill: ^11.5.0
+
+  # Image Handling
+  image_picker: ^1.2.1
+  image: ^4.8.0
+
+  # EPUB Generation (using archive to create ZIP-based EPUB)
+  archive: ^4.0.9
+
+  # Local Storage
+  sqflite: ^2.4.2
+  path_provider: ^2.1.5
+  path: ^1.9.0
+
+  # File Sharing
+  share_plus: ^12.0.2
+
+  # Routing
+  go_router: ^17.2.2
+
+  # Dependency Injection
+  get_it: ^9.2.1
+
+  # Utilities
+  uuid: ^4.5.3
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
