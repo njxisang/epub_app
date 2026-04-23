@@ -59,7 +59,7 @@ class HomePageView extends StatelessWidget {
 
           if (state is ProjectListLoaded) {
             if (state.projects.isEmpty) {
-              return const EmptyState();
+              return EmptyState(onCreateProject: () => _showCreateDialog(context));
             }
 
             return ListView.builder(
@@ -71,6 +71,8 @@ class HomePageView extends StatelessWidget {
                   project: project,
                   onTap: () => context.push('/editor/${project.id}'),
                   onDelete: () => _showDeleteDialog(context, project.id, project.title),
+                  onPreview: () => context.push('/preview/${project.id}'),
+                  onExport: () => context.push('/export/${project.id}'),
                 );
               },
             );
@@ -165,32 +167,45 @@ class HomePageView extends StatelessWidget {
 }
 
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key});
+  final VoidCallback onCreateProject;
+
+  const EmptyState({super.key, required this.onCreateProject});
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.book_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            AppStrings.emptyStateTitle,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            AppStrings.emptyStateSubtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.auto_stories_outlined,
+              size: 100,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              AppStrings.emptyStateTitle,
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              AppStrings.emptyStateSubtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: onCreateProject,
+              icon: const Icon(Icons.add),
+              label: const Text(AppStrings.createProject),
+            ),
+          ],
+        ),
       ),
     );
   }

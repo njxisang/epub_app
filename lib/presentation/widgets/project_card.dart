@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../data/models/book_project.dart';
 import '../../core/constants/app_dimensions.dart';
@@ -7,12 +8,16 @@ class ProjectCard extends StatelessWidget {
   final BookProject project;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback? onPreview;
+  final VoidCallback? onExport;
 
   const ProjectCard({
     super.key,
     required this.project,
     required this.onTap,
     required this.onDelete,
+    this.onPreview,
+    this.onExport,
   });
 
   @override
@@ -40,8 +45,8 @@ class ProjectCard extends StatelessWidget {
                 child: project.coverPath != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                        child: Image.asset(
-                          project.coverPath!,
+                        child: Image.file(
+                          File(project.coverPath!),
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Icon(
                             Icons.book,
@@ -92,9 +97,35 @@ class ProjectCard extends StatelessWidget {
                 onSelected: (value) {
                   if (value == 'delete') {
                     onDelete();
+                  } else if (value == 'preview' && onPreview != null) {
+                    onPreview!();
+                  } else if (value == 'export' && onExport != null) {
+                    onExport!();
                   }
                 },
                 itemBuilder: (context) => [
+                  if (onPreview != null)
+                    PopupMenuItem(
+                      value: 'preview',
+                      child: Row(
+                        children: [
+                          Icon(Icons.visibility, color: theme.colorScheme.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text('预览', style: TextStyle(color: theme.colorScheme.primary)),
+                        ],
+                      ),
+                    ),
+                  if (onExport != null)
+                    PopupMenuItem(
+                      value: 'export',
+                      child: Row(
+                        children: [
+                          Icon(Icons.ios_share, color: theme.colorScheme.secondary, size: 20),
+                          const SizedBox(width: 8),
+                          Text('导出', style: TextStyle(color: theme.colorScheme.secondary)),
+                        ],
+                      ),
+                    ),
                   PopupMenuItem(
                     value: 'delete',
                     child: Row(
