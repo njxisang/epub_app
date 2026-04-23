@@ -164,9 +164,13 @@ class _PreviewPageViewState extends State<_PreviewPageView> {
   late PageController _pageController;
   int _currentPage = 0;
 
+  // Cache for pages to avoid regenerating on every build
+  List<_PageContent>? _cachedPages;
+  String? _cachedProjectId;
+
   /// Jump to a specific chapter's first page
   void jumpToChapter(int chapterIndex) {
-    final pages = _generatePages();
+    final pages = _cachedPages ?? _generatePages();
     // Find the first page of the target chapter
     int targetPage = 0;
     for (int i = 0; i < pages.length; i++) {
@@ -186,6 +190,28 @@ class _PreviewPageViewState extends State<_PreviewPageView> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    _generatePagesCache();
+  }
+
+  @override
+  void didUpdateWidget(_PreviewPageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Invalidate cache when project changes
+    if (oldWidget.project.id != widget.project.id ||
+        oldWidget.project.updatedAt != widget.project.updatedAt) {
+      _cachedPages = null;
+      _generatePagesCache();
+    }
+  }
+
+  void _generatePagesCache() {
+    final projectId = widget.project.id;
+    if (_cachedPages != null && _cachedProjectId == projectId) {
+      return; // Cache hit
+    }
+
+    _cachedProjectId = projectId;
+    _cachedPages = _generatePages();
   }
 
   @override
@@ -196,7 +222,7 @@ class _PreviewPageViewState extends State<_PreviewPageView> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = _generatePages();
+    final pages = _cachedPages ?? _generatePages();
 
     if (pages.isEmpty) {
       return const Center(child: Text('暂无内容'));

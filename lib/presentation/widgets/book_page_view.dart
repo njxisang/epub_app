@@ -16,10 +16,26 @@ class _BookPageViewState extends State<BookPageView> {
   late PageController _pageController;
   int _currentPage = 0;
 
+  // Cache for pages to avoid regenerating on every build
+  List<_PageContent>? _cachedPages;
+  String? _cachedProjectId;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _generatePagesCache();
+  }
+
+  @override
+  void didUpdateWidget(BookPageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Invalidate cache when project changes
+    if (oldWidget.project.id != widget.project.id ||
+        oldWidget.project.updatedAt != widget.project.updatedAt) {
+      _cachedPages = null;
+      _generatePagesCache();
+    }
   }
 
   @override
@@ -28,10 +44,20 @@ class _BookPageViewState extends State<BookPageView> {
     super.dispose();
   }
 
+  void _generatePagesCache() {
+    final projectId = widget.project.id;
+    if (_cachedPages != null && _cachedProjectId == projectId) {
+      return; // Cache hit
+    }
+
+    _cachedProjectId = projectId;
+    _cachedPages = _generatePages();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Flatten all blocks from all chapters into pages
-    final pages = _generatePages();
+    // Use cached pages
+    final pages = _cachedPages ?? _generatePages();
 
     if (pages.isEmpty) {
       return const Center(child: Text('暂无内容'));
@@ -75,7 +101,7 @@ class _BookPageViewState extends State<BookPageView> {
         pages.add(_PageContent(
           chapterIndex: i,
           chapterTitle: chapter.title,
-          blocks: [],
+          blocks: const [],
         ));
       } else {
         // Group blocks into pages (simplified - one block per page for now)
@@ -204,9 +230,21 @@ class _PageContent {
   final String chapterTitle;
   final List<ContentBlock> blocks;
 
-  _PageContent({
+  const _PageContent({
     required this.chapterIndex,
     required this.chapterTitle,
     required this.blocks,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _PageContent &&
+          runtimeType == other.runtimeType &&
+          chapterIndex == other.chapterIndex &&
+          chapterTitle == other.chapterTitle &&
+          blocks.length == other.blocks.length;
+
+  @override
+  int get hashCode => Object.hash(chapterIndex, chapterTitle, blocks.length);
 }
