@@ -18,13 +18,13 @@ class EditorToolbar extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            color: Theme.of(context).colorScheme.outline.withAlpha(51),
           ),
         ),
       ),
       child: QuillSimpleToolbar(
         controller: controller,
-        configurations: const QuillSimpleToolbarConfigurations(
+        config: const QuillSimpleToolbarConfig(
           showAlignmentButtons: false,
           showBackgroundColorButton: false,
           showCenterAlignment: false,

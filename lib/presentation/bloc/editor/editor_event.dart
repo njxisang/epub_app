@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../../../data/models/chapter.dart';
 import '../../../data/models/content_block.dart';
 
 abstract class EditorEvent extends Equatable {

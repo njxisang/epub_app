@@ -7,10 +7,9 @@ import '../../core/constants/app_dimensions.dart';
 import '../../domain/services/image_service.dart';
 import '../bloc/editor/editor_bloc.dart';
 import '../bloc/editor/editor_event.dart';
-import '../bloc/editor/editor_state.dart';
+import '../bloc/editor/editor_state.dart' as editor;
 import '../widgets/chapter_list_tile.dart';
 import '../widgets/editor_toolbar.dart';
-import '../widgets/image_block_widget.dart';
 
 class EditorPage extends StatelessWidget {
   final String projectId;
@@ -52,27 +51,27 @@ class _EditorPageViewState extends State<EditorPageView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<EditorBloc, EditorState>(
+    return BlocConsumer<EditorBloc, editor.EditorState>(
       listener: (context, state) {
-        if (state is EditorLoaded && state.selectedChapter != null) {
+        if (state is editor.EditorLoaded && state.selectedChapter != null) {
           _initializeQuillController(state.selectedChapter!.blocks);
         }
       },
       builder: (context, state) {
-        if (state is EditorLoading) {
+        if (state is editor.EditorLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (state is EditorError) {
+        if (state is editor.EditorError) {
           return Scaffold(
             appBar: AppBar(),
             body: Center(child: Text(state.message)),
           );
         }
 
-        if (state is EditorLoaded) {
+        if (state is editor.EditorLoaded) {
           return Scaffold(
             appBar: AppBar(
               title: Text(state.project.title),
@@ -166,7 +165,7 @@ class _EditorPageViewState extends State<EditorPageView> {
     );
   }
 
-  Widget _buildEditor(BuildContext context, EditorLoaded state) {
+  Widget _buildEditor(BuildContext context, editor.EditorLoaded state) {
     return Column(
       children: [
         EditorToolbar(
