@@ -109,7 +109,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       selectedChapterId: newChapter.id,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 
   Future<void> _onDeleteChapter(
@@ -135,7 +137,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       selectedChapterId: newSelectedId,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 
   Future<void> _onRenameChapter(
@@ -158,7 +162,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       project: updatedProject,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 
   Future<void> _onReorderChapters(
@@ -178,7 +184,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       project: updatedProject,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 
   Future<void> _onSelectChapter(
@@ -211,7 +219,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       project: updatedProject,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 
   Future<void> _onInsertImage(
@@ -241,7 +251,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       project: updatedProject,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 
   Future<void> _onDeleteBlock(
@@ -266,7 +278,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       project: updatedProject,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 
   Future<void> _onMoveBlock(
@@ -298,7 +312,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       project: updatedProject,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 
   Future<void> _onUpdateMetadata(
@@ -318,6 +334,8 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       project: updatedProject,
       hasUnsavedChanges: true,
     ));
-    _startAutoSaveTimer();
+
+    // Save immediately
+    add(SaveProject());
   }
 }

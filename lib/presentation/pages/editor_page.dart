@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../data/models/content_block.dart';
@@ -44,10 +45,36 @@ class _EditorPageViewState extends State<EditorPageView> {
 
   @override
   void dispose() {
+    _saveCurrentChapter();
     _quillController?.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _saveCurrentChapter() {
+    if (_quillController != null && mounted) {
+      final state = context.read<EditorBloc>().state;
+      if (state is editor.EditorLoaded && state.selectedChapterId != null) {
+        final blocks = _documentToBlocks(_quillController!.document);
+        context.read<EditorBloc>().add(UpdateChapterContent(
+          chapterId: state.selectedChapterId!,
+          blocks: blocks,
+        ));
+      }
+    }
+  }
+
+  List<ContentBlock> _documentToBlocks(Document document) {
+    final blocks = <ContentBlock>[];
+    final plainText = document.toPlainText();
+    if (plainText.trim().isNotEmpty) {
+      blocks.add(ContentBlock.text(
+        id: const Uuid().v4(),
+        textContent: plainText,
+      ));
+    }
+    return blocks;
   }
 
   @override
@@ -129,9 +156,12 @@ class _EditorPageViewState extends State<EditorPageView> {
                             return ChapterListTile(
                               chapter: chapter,
                               isSelected: chapter.id == state.selectedChapterId,
-                              onTap: () => context
-                                  .read<EditorBloc>()
-                                  .add(SelectChapter(chapter.id)),
+                              onTap: () {
+                                  _saveCurrentChapter();
+                                  context
+                                      .read<EditorBloc>()
+                                      .add(SelectChapter(chapter.id));
+                                },
                               onRename: () =>
                                   _showRenameChapterDialog(context, chapter.id, chapter.title),
                               onDelete: () =>
@@ -200,6 +230,11 @@ class _EditorPageViewState extends State<EditorPageView> {
       document: document,
       selection: const TextSelection.collapsed(offset: 0),
     );
+
+    // Listen for document changes and save
+    _quillController!.document.changes.listen((event) {
+      _saveCurrentChapter();
+    });
   }
 
   Document _blocksToDocument(List blocks) {
