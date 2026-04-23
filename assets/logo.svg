@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 450" width="400" height="450">
+  <rect width="400" height="450" fill="white"/>
+  
+  <!-- Book background (yellow) -->
+  <rect x="58" y="78" width="282" height="204" rx="8" fill="#fff3bf" stroke="#1e1e1e" stroke-width="3"/>
+  
+  <!-- Book spine (center line) -->
+  <line x1="200" y1="78" x2="200" y2="282" stroke="#1e1e1e" stroke-width="3"/>
+  
+  <!-- Page lines (left side) - slightly wobbly -->
+  <path d="M95 118 Q100 120 165 118" stroke="#1e1e1e" stroke-width="2" fill="none"/>
+  <path d="M98 148 Q105 150 158 148" stroke="#1e1e1e" stroke-width="2" fill="none"/>
+  <path d="M95 178 Q102 180 163 178" stroke="#1e1e1e" stroke-width="2" fill="none"/>
+  <path d="M100 208 Q107 210 153 208" stroke="#1e1e1e" stroke-width="2" fill="none"/>
+  
+  <!-- Page lines (right side) -->
+  <path d="M218 118 Q225 120 290 118" stroke="#1e1e1e" stroke-width="2" fill="none"/>
+  <path d="M228 148 Q235 150 283 148" stroke="#1e1e1e" stroke-width="2" fill="none"/>
+  <path d="M222 178 Q230 180 280 178" stroke="#1e1e1e" stroke-width="2" fill="none"/>
+  <path d="M232 208 Q238 210 275 208" stroke="#1e1e1e" stroke-width="2" fill="none"/>
+  
+  <!-- Pen body (purple, slightly rotated) -->
+  <path d="M295 168 L355 163 L358 187 L298 192 Z" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+  
+  <!-- Pen nib -->
+  <path d="M355 163 L358 187 L375 175 Z" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+  
+  <!-- Pen tip -->
+  <line x1="375" y1="175" x2="388" y2="175" stroke="#1e1e1e" stroke-width="2"/>
+  
+  <!-- Decorative elements - scribble circles -->
+  <circle cx="65" cy="330" r="15" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+  <circle cx="335" cy="90" r="12" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+  <circle cx="95" cy="55" r="8" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+  <circle cx="355" cy="315" r="9" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+  
+  <!-- Small stars (4-pointed) -->
+  <path d="M320 55 L323 62 L330 65 L323 68 L320 75 L317 68 L310 65 L317 62 Z" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="1"/>
+  <path d="M75 310 L77 315 L82 317 L77 319 L75 324 L73 319 L68 317 L73 315 Z" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="1"/>
+  
+  <!-- Text -->
+  <text x="100" y="360" font-family="Comic Sans MS, cursive, sans-serif" font-size="36" fill="#1e1e1e">Epub App</text>
+  <text x="115" y="400" font-family="Comic Sans MS, cursive, sans-serif" font-size="18" fill="#757575">create your story</text>
+</svg>
