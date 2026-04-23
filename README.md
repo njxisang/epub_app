@@ -85,6 +85,9 @@ lib/
 ### Android
 ```bash
 # 需要 JDK 17 和 Android SDK
+export JAVA_HOME=/path/to/jdk17
+export ANDROID_HOME=/path/to/android-sdk
+export PATH=$JAVA_HOME/bin:$PATH
 flutter pub get
 flutter build apk --debug
 # 输出: build/app/outputs/flutter-apk/app-debug.apk
