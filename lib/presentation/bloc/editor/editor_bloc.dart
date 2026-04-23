@@ -4,14 +4,12 @@ import 'package:uuid/uuid.dart';
 import '../../../data/models/chapter.dart';
 import '../../../data/models/content_block.dart';
 import '../../../data/repositories/project_repository.dart';
-import '../../../core/constants/app_dimensions.dart';
 import 'editor_event.dart';
 import 'editor_state.dart';
 
 class EditorBloc extends Bloc<EditorEvent, EditorState> {
   final ProjectRepository _repository;
   final _uuid = const Uuid();
-  Timer? _autoSaveTimer;
 
   EditorBloc({required ProjectRepository repository})
       : _repository = repository,
@@ -32,16 +30,7 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
 
   @override
   Future<void> close() {
-    _autoSaveTimer?.cancel();
     return super.close();
-  }
-
-  void _startAutoSaveTimer() {
-    _autoSaveTimer?.cancel();
-    _autoSaveTimer = Timer(
-      const Duration(seconds: AppDimensions.autoSaveInterval),
-      () => add(SaveProject()),
-    );
   }
 
   Future<void> _onLoadProject(

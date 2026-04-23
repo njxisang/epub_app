@@ -58,8 +58,8 @@ class _EditorPageViewState extends State<EditorPageView> {
       if (state is editor.EditorLoaded && state.selectedChapterId != null) {
         final blocks = _documentToBlocks(_quillController!.document);
         context.read<EditorBloc>().add(UpdateChapterContent(
-          chapterId: state.selectedChapterId!,
-          blocks: blocks,
+          state.selectedChapterId!,
+          blocks,
         ));
       }
     }
@@ -71,7 +71,7 @@ class _EditorPageViewState extends State<EditorPageView> {
     if (plainText.trim().isNotEmpty) {
       blocks.add(ContentBlock.text(
         id: const Uuid().v4(),
-        textContent: plainText,
+        content: plainText,
       ));
     }
     return blocks;
@@ -111,6 +111,14 @@ class _EditorPageViewState extends State<EditorPageView> {
                       child: Text('未保存', style: TextStyle(color: Colors.orange)),
                     ),
                   ),
+                IconButton(
+                  icon: const Icon(Icons.save),
+                  onPressed: () {
+                    _saveCurrentChapter();
+                    context.read<EditorBloc>().add(SaveProject());
+                  },
+                  tooltip: '保存',
+                ),
                 IconButton(
                   icon: const Icon(Icons.preview),
                   onPressed: () => context.push('/preview/${widget.projectId}'),
@@ -206,14 +214,14 @@ class _EditorPageViewState extends State<EditorPageView> {
         Expanded(
           child: _quillController != null
               ? QuillEditor(
-                  configurations: QuillEditorConfigurations(
-                    controller: _quillController!,
+                  controller: _quillController!,
+                  focusNode: _focusNode,
+                  scrollController: _scrollController,
+                  config: QuillEditorConfig(
                     autoFocus: false,
                     expands: true,
                     scrollable: true,
                   ),
-                  focusNode: _focusNode,
-                  scrollController: _scrollController,
                 )
               : const Center(child: CircularProgressIndicator()),
         ),

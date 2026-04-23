@@ -16,7 +16,7 @@ dependencies:
   equatable: ^2.0.8
 
   # Rich Text Editor
-  flutter_quill: ^9.6.0
+  flutter_quill: ^11.5.0
 
   # Image Handling
   image_picker: ^1.1.2
@@ -40,7 +40,6 @@ dependencies:
 
   # Utilities
   uuid: ^4.5.3
-  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
