@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -42,6 +43,7 @@ class _EditorPageViewState extends State<EditorPageView> {
   QuillController? _quillController;
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
+  String? _currentChapterId;
 
   @override
   void dispose() {
@@ -53,22 +55,19 @@ class _EditorPageViewState extends State<EditorPageView> {
   }
 
   void _saveCurrentChapter() {
-    if (_quillController != null && mounted) {
-      final state = context.read<EditorBloc>().state;
-      if (state is editor.EditorLoaded && state.selectedChapterId != null) {
-        final blocks = _documentToBlocks(_quillController!.document);
-        context.read<EditorBloc>().add(UpdateChapterContent(
-          state.selectedChapterId!,
-          blocks,
-        ));
-      }
+    if (_quillController != null && mounted && _currentChapterId != null) {
+      final blocks = _documentToBlocks(_quillController!.document);
+      context.read<EditorBloc>().add(UpdateChapterContent(
+        _currentChapterId!,
+        blocks,
+      ));
     }
   }
 
   List<ContentBlock> _documentToBlocks(Document document) {
     final blocks = <ContentBlock>[];
-    final plainText = document.toPlainText();
-    if (plainText.trim().isNotEmpty) {
+    final plainText = document.toPlainText().trim();
+    if (plainText.isNotEmpty) {
       blocks.add(ContentBlock.text(
         id: const Uuid().v4(),
         content: plainText,
@@ -82,7 +81,10 @@ class _EditorPageViewState extends State<EditorPageView> {
     return BlocConsumer<EditorBloc, editor.EditorState>(
       listener: (context, state) {
         if (state is editor.EditorLoaded && state.selectedChapter != null) {
-          _initializeQuillController(state.selectedChapter!.blocks);
+          if (state.selectedChapterId != _currentChapterId) {
+            _currentChapterId = state.selectedChapterId;
+            _initializeQuillController(state.selectedChapter!.blocks);
+          }
         }
       },
       builder: (context, state) {
@@ -165,11 +167,11 @@ class _EditorPageViewState extends State<EditorPageView> {
                               chapter: chapter,
                               isSelected: chapter.id == state.selectedChapterId,
                               onTap: () {
-                                  _saveCurrentChapter();
-                                  context
-                                      .read<EditorBloc>()
-                                      .add(SelectChapter(chapter.id));
-                                },
+                                _saveCurrentChapter();
+                                context
+                                    .read<EditorBloc>()
+                                    .add(SelectChapter(chapter.id));
+                              },
                               onRename: () =>
                                   _showRenameChapterDialog(context, chapter.id, chapter.title),
                               onDelete: () =>
@@ -209,7 +211,7 @@ class _EditorPageViewState extends State<EditorPageView> {
       children: [
         EditorToolbar(
           controller: _quillController!,
-          onInsertImage: () => _insertImage(context, state.selectedChapterId!),
+          onInsertImage: () => _insertImage(context),
         ),
         Expanded(
           child: _quillController != null
@@ -221,6 +223,9 @@ class _EditorPageViewState extends State<EditorPageView> {
                     autoFocus: false,
                     expands: true,
                     scrollable: true,
+                    embedBuilders: [
+                      ImageEmbedBuilder(),
+                    ],
                   ),
                 )
               : const Center(child: CircularProgressIndicator()),
@@ -232,7 +237,6 @@ class _EditorPageViewState extends State<EditorPageView> {
   void _initializeQuillController(List blocks) {
     _quillController?.dispose();
 
-    // Convert ContentBlocks to Quill Delta document
     final document = _blocksToDocument(blocks);
     _quillController = QuillController(
       document: document,
@@ -250,36 +254,41 @@ class _EditorPageViewState extends State<EditorPageView> {
       return Document();
     }
 
-    // Build plain text from blocks and create document
-    final plainText = blocks.map((block) {
+    final doc = Document();
+    for (int i = 0; i < blocks.length; i++) {
+      final block = blocks[i];
       if (block.type == BlockType.text && block.textContent != null) {
-        return block.textContent!;
+        doc.insert(doc.length - 1, block.textContent!);
       } else if (block.type == BlockType.image && block.imagePath != null) {
-        return '[图片: ${block.imagePath!.split('/').last}]';
+        doc.insert(doc.length - 1, BlockEmbed.image(block.imagePath!));
       }
-      return '';
-    }).where((line) => line.isNotEmpty).join('\n\n');
+      if (i < blocks.length - 1) {
+        doc.insert(doc.length - 1, '\n');
+      }
+    }
 
-    return Document()..insert(0, plainText);
+    return doc;
   }
 
-  void _insertImage(BuildContext context, String chapterId) async {
+  Future<void> _insertImage(BuildContext context) async {
+    if (_quillController == null || _currentChapterId == null) return;
+
     final imageService = context.read<ImageService>();
 
     final source = await showModalBottomSheet<String>(
       context: context,
-      builder: (context) => Column(
+      builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
             leading: const Icon(Icons.photo_library),
             title: const Text(AppStrings.fromGallery),
-            onTap: () => Navigator.pop(context, 'gallery'),
+            onTap: () => Navigator.pop(ctx, 'gallery'),
           ),
           ListTile(
             leading: const Icon(Icons.camera_alt),
             title: const Text(AppStrings.fromCamera),
-            onTap: () => Navigator.pop(context, 'camera'),
+            onTap: () => Navigator.pop(ctx, 'camera'),
           ),
         ],
       ),
@@ -294,10 +303,20 @@ class _EditorPageViewState extends State<EditorPageView> {
 
       if (file != null && mounted) {
         final savedPath = await imageService.saveImage(widget.projectId, file);
+
+        // Insert image into Quill document
+        final index = _quillController!.selection.baseOffset;
+        _quillController!.document.insert(index, BlockEmbed.image(savedPath));
+        _quillController!.updateSelection(
+          TextSelection.collapsed(offset: index + 1),
+          ChangeSource.local,
+        );
+
+        // Also update the bloc state for persistence
         context.read<EditorBloc>().add(InsertImage(
-              chapterId: chapterId,
-              imagePath: savedPath,
-            ));
+          chapterId: _currentChapterId!,
+          imagePath: savedPath,
+        ));
       }
     } catch (e) {
       if (mounted) {
@@ -390,6 +409,90 @@ class _EditorPageViewState extends State<EditorPageView> {
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             child: const Text(AppStrings.delete),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Custom embed builder for images in QuillEditor
+class ImageEmbedBuilder extends EmbedBuilder {
+  @override
+  String get key => BlockEmbed.imageType;
+
+  @override
+  Widget build(BuildContext context, EmbedContext embedContext) {
+    final imagePath = embedContext.node.value.data as String;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: GestureDetector(
+        onTap: () => _showImageOptions(context, embedContext),
+        child: _buildImageWidget(imagePath),
+      ),
+    );
+  }
+
+  Widget _buildImageWidget(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildErrorPlaceholder();
+        },
+      );
+    } else {
+      return Image.file(
+        File(imagePath),
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildErrorPlaceholder();
+        },
+      );
+    }
+  }
+
+  Widget _buildErrorPlaceholder() {
+    return Container(
+      height: 100,
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+      ),
+    );
+  }
+
+  void _showImageOptions(BuildContext context, EmbedContext embedContext) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.delete),
+            title: const Text('删除图片'),
+            onTap: () {
+              Navigator.pop(ctx);
+              // Find and replace the image embed with empty text
+              final delta = embedContext.controller.document.toDelta();
+              int embedIndex = -1;
+              for (int i = 0; i < delta.length; i++) {
+                final op = delta[i];
+                if (op.data is Map && (op.data as Map).containsKey(BlockEmbed.imageType)) {
+                  embedIndex = i;
+                  break;
+                }
+              }
+              if (embedIndex >= 0) {
+                embedContext.controller.replaceText(
+                  embedIndex,
+                  1,
+                  '',
+                  const TextSelection.collapsed(offset: 0),
+                );
+              }
+            },
           ),
         ],
       ),
