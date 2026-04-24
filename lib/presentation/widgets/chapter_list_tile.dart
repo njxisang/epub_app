@@ -41,7 +41,7 @@ class ChapterListTile extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             color: isSelected
-                ? theme.colorScheme.onPrimaryContainer.withOpacity(0.7)
+                ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
                 : theme.colorScheme.outline,
           ),
         ),

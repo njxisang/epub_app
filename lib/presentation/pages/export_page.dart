@@ -167,7 +167,7 @@ class _ExportPageState extends State<ExportPage> {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       child: coverPath != null
@@ -192,7 +192,7 @@ class _ExportPageState extends State<ExportPage> {
                         onPressed: () => _pickCover(context),
                         icon: const Icon(Icons.edit),
                         style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                          backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -200,7 +200,7 @@ class _ExportPageState extends State<ExportPage> {
                         onPressed: () => _removeCover(),
                         icon: const Icon(Icons.delete),
                         style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.8),
+                          backgroundColor: Theme.of(context).colorScheme.error.withValues(alpha: 0.8),
                         ),
                       ),
                     ],

@@ -28,11 +28,6 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
     on<UpdateMetadata>(_onUpdateMetadata);
   }
 
-  @override
-  Future<void> close() {
-    return super.close();
-  }
-
   Future<void> _onLoadProject(
     LoadProject event,
     Emitter<EditorState> emit,
