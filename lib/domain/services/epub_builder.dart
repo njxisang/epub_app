@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
@@ -12,7 +13,7 @@ class EpubBuilder {
 
     // mimetype (must be first and uncompressed)
     final mimetype = 'application/epub+zip';
-    archive.addFile(ArchiveFile('mimetype', mimetype.length, mimetype.codeUnits));
+    archive.addFile(ArchiveFile('mimetype', mimetype.length, utf8.encode(mimetype)));
 
     // META-INF/container.xml
     final containerXml = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -21,23 +22,28 @@ class EpubBuilder {
     <rootfile full-path="EPUB/content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
 </container>''';
-    archive.addFile(ArchiveFile('META-INF/container.xml', containerXml.length, containerXml.codeUnits));
+    final containerBytes = utf8.encode(containerXml);
+    archive.addFile(ArchiveFile('META-INF/container.xml', containerBytes.length, containerBytes));
 
     // EPUB/content.opf
     final contentOpf = _buildContentOpf(project);
-    archive.addFile(ArchiveFile('EPUB/content.opf', contentOpf.length, contentOpf.codeUnits));
+    final contentOpfBytes = utf8.encode(contentOpf);
+    archive.addFile(ArchiveFile('EPUB/content.opf', contentOpfBytes.length, contentOpfBytes));
 
     // EPUB/nav.xhtml (EPUB3 navigation)
     final navXhtml = _buildNavXhtml(project);
-    archive.addFile(ArchiveFile('EPUB/nav.xhtml', navXhtml.length, navXhtml.codeUnits));
+    final navXhtmlBytes = utf8.encode(navXhtml);
+    archive.addFile(ArchiveFile('EPUB/nav.xhtml', navXhtmlBytes.length, navXhtmlBytes));
 
     // EPUB/toc.ncx (EPUB2 navigation)
     final tocNcx = _buildTocNcx(project);
-    archive.addFile(ArchiveFile('EPUB/toc.ncx', tocNcx.length, tocNcx.codeUnits));
+    final tocNcxBytes = utf8.encode(tocNcx);
+    archive.addFile(ArchiveFile('EPUB/toc.ncx', tocNcxBytes.length, tocNcxBytes));
 
     // EPUB/styles/styles.css
     final stylesCss = _getDefaultStyles();
-    archive.addFile(ArchiveFile('EPUB/styles/styles.css', stylesCss.length, stylesCss.codeUnits));
+    final stylesCssBytes = utf8.encode(stylesCss);
+    archive.addFile(ArchiveFile('EPUB/styles/styles.css', stylesCssBytes.length, stylesCssBytes));
 
     // Cover image
     List<int>? coverBytes;
@@ -73,7 +79,8 @@ class EpubBuilder {
     // Add chapters
     for (var i = 0; i < project.chapters.length; i++) {
       final chapterXhtml = _buildChapterXhtml(project.chapters[i], i, imageFiles.keys.toList());
-      archive.addFile(ArchiveFile('EPUB/chapters/chapter_${i + 1}.xhtml', chapterXhtml.length, chapterXhtml.codeUnits));
+      final chapterBytes = utf8.encode(chapterXhtml);
+      archive.addFile(ArchiveFile('EPUB/chapters/chapter_${i + 1}.xhtml', chapterBytes.length, chapterBytes));
     }
 
     // Write EPUB file
